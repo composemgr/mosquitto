@@ -1,0 +1,25 @@
+name: mosquitto
+services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    tty: true
+    stdin_open: true
+    ports:
+        - '1883:1883'
+    volumes:
+        - '/var/lib/srv/${USER}/docker/library/mosquitto/latest/rootfs/data/mosquitto:/data'
+        - '/var/lib/srv/${USER}/docker/library/mosquitto/latest/rootfs/config/mosquitto:/config'
+    extra_hosts:
+      - 'mosquitto:host-gateway'
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - mosquitto
+
+networks:
+  mosquitto:
+    name: mosquitto
+    external: false
