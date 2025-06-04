@@ -1,0 +1,36 @@
+# nginx proxy address - http://172.17.0.1:1883
+
+name: mosquitto
+x-logging: &default-logging
+  options:
+    max-size: '5m'
+    max-file: '1'
+  driver: json-file
+
+services:
+  server:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto-server
+    hostname: ${BASE_HOST_NAME:-$HOSTNAME}
+    restart: always
+    pull_policy: always
+    tty: true
+    stdin_open: true
+    logging: *default-logging
+    environment:
+      - TZ=${TZ:-America/New_York}
+    ports:
+      - '1883:1883'
+    volumes:
+      - './rootfs/data/mosquitto:/data'
+      - './rootfs/config/mosquitto:/config'
+    extra_hosts:
+      - 'mosquitto:host-gateway'
+      - 'host.docker.internal:host-gateway'
+    networks:
+      - mosquitto
+
+networks:
+  mosquitto:
+    name: mosquitto
+    external: false
