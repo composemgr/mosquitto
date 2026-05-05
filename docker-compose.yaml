@@ -22,8 +22,8 @@ services:
     ports:
       - '1883:1883'
     volumes:
-      - './rootfs/data/mosquitto:/data'
-      - './rootfs/config/mosquitto:/config'
+      - './volumes/data/mosquitto:/data'
+      - './volumes/config/mosquitto:/config'
     extra_hosts:
       - 'mosquitto:host-gateway'
       - 'host.docker.internal:host-gateway'
