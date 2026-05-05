@@ -45,8 +45,8 @@ See `docker-compose.yaml` for complete list of configurable options.
 
 ## 📂 Volumes
 
-- `./rootfs/data/mosquitto` - Data storage
-- `./rootfs/config/mosquitto` - Data storage
+- `./volumes/data/mosquitto` - Data storage
+- `./volumes/config/mosquitto` - Data storage
 
 ## 🔍 Logging
 
