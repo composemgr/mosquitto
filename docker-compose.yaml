@@ -19,6 +19,8 @@ services:
     logging: *default-logging
     environment:
       TZ: ${TZ:-America/New_York}
+      CONTAINER_NAME: mosquitto-app
+      HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
     ports:
       - '1883:1883'
     volumes:
@@ -29,8 +31,30 @@ services:
       - 'host.docker.internal:host-gateway'
     networks:
       - mosquitto
+      - proxy
+      - cloudflare
+    labels:
+      - 'traefik.enable=true'
+      - 'cloudflare.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'cloudflare.service=http://mosquitto-app:1883'
+      - 'cloudflare.hostname=mosquitto.${CLOUDFLARE_ZONE_NAME:-}'
+      - 'traefik.http.routers.mosquitto-app.entrypoints=http'
+      - 'traefik.http.routers.mosquitto-app-secure.tls=true'
+      - 'traefik.http.routers.mosquitto-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.middlewares.mosquitto-app-https-redirect.redirectscheme.scheme=https'
+      - 'traefik.http.routers.mosquitto-app.middlewares=mosquitto-app-https-redirect'
+      - 'traefik.http.routers.mosquitto-app-secure.entrypoints=https'
+      - 'traefik.http.routers.mosquitto-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
+      - 'traefik.http.routers.mosquitto-app-secure.tls.certresolver=cloudflare'
+      - 'traefik.http.routers.mosquitto-app-secure.service=mosquitto-app'
+      - 'traefik.http.services.mosquitto-app.loadbalancer.server.port=1883'
 
 networks:
   mosquitto:
     name: mosquitto
     external: false
+  proxy:
+    external: true
+  cloudflare:
+    external: true
