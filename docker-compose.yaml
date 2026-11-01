@@ -1,4 +1,4 @@
-# nginx proxy address - http://172.17.0.1:1883
+# nginx proxy address - no HTTP interface, the broker publishes its native 1883 port
 
 name: mosquitto
 x-logging: &default-logging
@@ -11,6 +11,7 @@ services:
   app:
     image: eclipse-mosquitto:latest
     container_name: mosquitto-app
+    domainname: ${BASE_DOMAIN_NAME:-example.com}
     hostname: ${BASE_HOST_NAME:-$HOSTNAME}
     restart: always
     pull_policy: always
@@ -24,38 +25,15 @@ services:
     ports:
       - '1883:1883'
     volumes:
-      - './volumes/data/mosquitto:/mosquitto/data'
-      - './volumes/config/mosquitto:/mosquitto/config'
-      - './volumes/data/log/mosquitto:/mosquitto/log'
+      - './volumes/data/mosquitto:/mosquitto/data:z'
+      - './volumes/config/mosquitto:/mosquitto/config:z'
+      - './volumes/data/log/mosquitto:/mosquitto/log:z'
     extra_hosts:
-      - 'mosquitto:host-gateway'
       - 'host.docker.internal:host-gateway'
     networks:
       - mosquitto
-      - proxy
-      - cloudflare
-    labels:
-      - 'traefik.enable=true'
-      - 'cloudflare.enable=true'
-      - 'traefik.docker.network=proxy'
-      - 'cloudflare.service=http://mosquitto-app:1883'
-      - 'cloudflare.hostname=mosquitto.${CLOUDFLARE_ZONE_NAME:-}'
-      - 'traefik.http.routers.mosquitto-app.entrypoints=http'
-      - 'traefik.http.routers.mosquitto-app-secure.tls=true'
-      - 'traefik.http.routers.mosquitto-app.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.middlewares.mosquitto-app-https-redirect.redirectscheme.scheme=https'
-      - 'traefik.http.routers.mosquitto-app.middlewares=mosquitto-app-https-redirect'
-      - 'traefik.http.routers.mosquitto-app-secure.entrypoints=https'
-      - 'traefik.http.routers.mosquitto-app-secure.rule=Host($(${BASE_HOST_NAME:-$HOSTNAME}))'
-      - 'traefik.http.routers.mosquitto-app-secure.tls.certresolver=cloudflare'
-      - 'traefik.http.routers.mosquitto-app-secure.service=mosquitto-app'
-      - 'traefik.http.services.mosquitto-app.loadbalancer.server.port=1883'
 
 networks:
   mosquitto:
     name: mosquitto
     external: false
-  proxy:
-    external: true
-  cloudflare:
-    external: true

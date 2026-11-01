@@ -4,11 +4,24 @@ Open-source MQTT message broker
 
 ## 📋 Description
 
-Open-source MQTT message broker
+Mosquitto is a lightweight open-source MQTT broker. It accepts publish and
+subscribe connections from MQTT clients and relays messages between them,
+optionally with persistence, retained messages and TLS. This stack runs the
+eclipse-mosquitto image with its config, data and log directories bind mounted
+under the project tree.
+
+Note that port 1883 is the plain MQTT TCP listener, not an HTTP endpoint. The
+published address is useful for local MQTT clients and health checks; the
+reverse proxy variants only make sense if the broker also has an HTTP or
+WebSocket listener enabled in its config.
 
 ## 🚀 Services
 
 - **app**: eclipse-mosquitto:latest
+
+### Infrastructure Components
+
+None, Mosquitto is a single container stack.
 
 ## 📦 Installation
 
@@ -21,7 +34,8 @@ curl -q -LSsf "https://raw.githubusercontent.com/composemgr/mosquitto/main/docke
 ```bash
 git clone "https://github.com/composemgr/mosquitto" ~/.local/srv/docker/mosquitto
 cd ~/.local/srv/docker/mosquitto
-docker compose up -d
+cp default.env .env
+docker compose --env-file .env up -d
 ```
 
 ### Option 3: Using composemgr
@@ -35,42 +49,98 @@ composemgr install mosquitto
 
 ```shell
 TZ=America/New_York
+BASE_DOMAIN_NAME=example.com
+BASE_HOST_NAME=mosquitto.example.com
 ```
+
+Mosquitto itself is configured through `mosquitto.conf` in the mounted config
+directory, not through environment variables.
 
 See `docker-compose.yaml` for complete list of configurable options.
 
+### Environment Files
+
+`default.env.sample` holds the full set of variables and is copied to `.env`
+before starting the stack:
+
+```bash
+cp default.env .env
+docker compose --env-file .env up -d
+```
+
+`app.env.sample` holds the app-specific overrides and is copied to `app.env`:
+
+```bash
+cp app.env.sample app.env
+```
+
+`composemgr up` applies `app.env` and `default.env` automatically. Raw
+`docker compose` commands need `--env-file .env` to pick up the same values.
+
+### Reverse Proxy
+
+Three standalone compose files ship in this repo:
+
+| File | Use |
+|------|-----|
+| `docker-compose.yaml` | Default, published on `1883` |
+| `docker-compose.traefik.yaml` | Behind an existing external `traefik` network |
+| `docker-compose.tunnel.yaml` | Behind an existing external `cloudflare` tunnel network |
+
+```bash
+docker compose -f docker-compose.traefik.yaml --env-file .env up -d
+```
+
 ## 🌐 Access
 
-- **Web Interface**: http://172.17.0.1:1883
+- **TCP endpoint**: mqtt://172.17.0.1:1883
+
+Port `1883` is the plain MQTT TCP listener, not an HTTP endpoint. MQTT clients
+connect to `172.17.0.1:1883` on the default compose file.
+
+As a protocol service, the broker publishes its native `1883` port on the
+host; the assigned `64261` slot is not used.
 
 ## 📂 Volumes
 
-- `./volumes/data/mosquitto` - Data storage
-- `./volumes/config/mosquitto` - Data storage
+- `./volumes/data/mosquitto` - Persisted messages and the persistence database
+- `./volumes/config/mosquitto` - `mosquitto.conf` and any TLS material
+- `./volumes/data/log/mosquitto` - Broker log files
+
+## 🔐 Security
+
+- Put a `mosquitto.conf` in `./volumes/config/mosquitto` and set
+  `allow_anonymous false` plus a password file before exposing the broker
+- Enable the WebSocket listener with TLS if clients connect over HTTPS
+- The broker is published on the dockerhost bind IP only, it is not exposed on
+  any other host interface
+- Use the reverse proxy in production for TLS terminated access
+- Keep the persistence directory on a backed-up volume
+- Regularly update Docker images for security patches
 
 ## 🔍 Logging
 
 ```shell
-docker compose logs -f app
+docker compose --env-file .env logs -f app
 ```
 
 ## 🛠️ Management
 
 ```bash
 # Start services
-docker compose up -d
+docker compose --env-file .env up -d
 
 # Stop services
-docker compose down
+docker compose --env-file .env down
 
 # Update to latest images
-docker compose pull && docker compose up -d
+docker compose --env-file .env pull && docker compose --env-file .env up -d
 
 # View logs
-docker compose logs -f
+docker compose --env-file .env logs -f
 
 # Restart services
-docker compose restart
+docker compose --env-file .env restart
 ```
 
 ## 📋 Requirements
