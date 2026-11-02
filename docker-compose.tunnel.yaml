@@ -20,6 +20,8 @@ services:
       TZ: ${TZ:-America/New_York}
       CONTAINER_NAME: mosquitto-app
       HOSTNAME: ${BASE_HOST_NAME:-$HOSTNAME}
+    ports:
+      - '1883:1883'
     volumes:
       - './volumes/data/mosquitto:/mosquitto/data:z'
       - './volumes/config/mosquitto:/mosquitto/config:z'
